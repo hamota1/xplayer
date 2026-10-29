@@ -1,0 +1,7 @@
+1.6.3
+
+Release notes: (v 1.6.2 => v 1.6.3)
+===========================
+
+Android-SDK
+ - Upgrade Fling SDK libs to target API level 34.

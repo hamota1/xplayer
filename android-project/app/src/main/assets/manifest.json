@@ -1,0 +1,21 @@
+{
+  "name": "XPlayer - Video Player All Format",
+  "short_name": "XPlayer",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#ff9800",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/splash1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/splash2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

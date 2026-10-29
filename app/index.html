@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XPlayer - Video Player All Format (Clone)</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff9800">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons CDN -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: '#ff9800',
+            brandDark: '#e68900',
+            darkBg: '#121212',
+            darkCard: '#1e1e1e',
+            darkBorder: '#2e2e2e',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #121212;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #ff9800;
+    }
+
+    /* Range slider styling */
+    input[type=range] {
+      accent-color: #ff9800;
+    }
+
+    .video-aspect-fit { object-fit: contain; }
+    .video-aspect-fill { object-fit: cover; }
+    .video-aspect-16-9 { aspect-ratio: 16/9; object-fit: fill; }
+    .video-aspect-4-3 { aspect-ratio: 4/3; object-fit: fill; }
+
+    /* Night mode blue light filter */
+    .night-filter {
+      filter: sepia(0.35) brightness(0.85);
+    }
+
+    /* Gesture overlay animations */
+    .gesture-indicator {
+      transition: opacity 0.3s ease, transform 0.2s ease;
+    }
+
+    /* Ambient glow */
+    .glow-brand {
+      box-shadow: 0 0 20px rgba(255, 152, 0, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-darkBg text-gray-100 font-sans min-h-screen select-none overflow-x-hidden">
+
+  <!-- ================= APP CONTAINER ================= -->
+  <div id="app" class="flex flex-col h-screen">
+
+    <!-- Top Navigation Header -->
+    <header class="h-16 bg-darkCard border-b border-darkBorder flex items-center justify-between px-4 sm:px-6 z-20">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('videos')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brandDark to-brand flex items-center justify-center text-darkBg shadow-lg shadow-brand/20 font-black text-xl">
+          <i class="ph-bold ph-play"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-1.5">
+            XPlayer <span class="text-xs bg-brand/20 text-brand px-2 py-0.5 rounded-full font-semibold border border-brand/30">PRO</span>
+          </h1>
+          <p class="text-[10px] text-gray-400 font-medium tracking-wide">VIDEO PLAYER ALL FORMAT</p>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="hidden md:flex items-center flex-1 max-w-md mx-6">
+        <div class="relative w-full">
+          <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search videos, folders, formats..." 
+            oninput="handleSearch(this.value)"
+            class="w-full bg-[#242424] text-sm text-gray-200 pl-10 pr-4 py-2 rounded-full border border-transparent focus:border-brand focus:outline-none transition-all placeholder-gray-500"
+          />
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Open File Picker -->
+        <label class="cursor-pointer bg-brand hover:bg-brandDark text-darkBg font-bold px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center space-x-1.5 transition-all shadow-md shadow-brand/20 active:scale-95">
+          <i class="ph-bold ph-folder-open text-base"></i>
+          <span class="hidden sm:inline">Open File</span>
+          <input type="file" id="localFileInput" accept="video/*" class="hidden" onchange="handleLocalFileSelect(event)">
+        </label>
+
+        <!-- Equalizer Button -->
+        <button onclick="openEqualizerModal()" title="Audio Equalizer" class="w-9 h-9 rounded-lg bg-[#282828] hover:bg-[#333] text-gray-300 hover:text-brand flex items-center justify-center transition border border-darkBorder">
+          <i class="ph ph-sliders text-xl"></i>
+        </button>
+
+        <!-- Private Vault Button -->
+        <button onclick="switchTab('vault')" title="Private Vault" class="w-9 h-9 rounded-lg bg-[#282828] hover:bg-[#333] text-gray-300 hover:text-brand flex items-center justify-center transition border border-darkBorder">
+          <i class="ph ph-lock-key text-xl"></i>
+        </button>
+
+        <!-- Theme Selector -->
+        <button onclick="toggleTheme()" title="Toggle Theme" class="w-9 h-9 rounded-lg bg-[#282828] hover:bg-[#333] text-gray-300 hover:text-brand flex items-center justify-center transition border border-darkBorder">
+          <i class="ph ph-palette text-xl"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main View Area (Tabs & Library) -->
+    <div class="flex-1 flex overflow-hidden">
+      
+      <!-- Side Navigation Bar -->
+      <nav class="w-20 sm:w-56 bg-darkCard border-r border-darkBorder flex flex-col justify-between p-3">
+        <div class="space-y-1 sm:space-y-1.5">
+          <button onclick="switchTab('folders')" id="tab-btn-folders" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:text-white hover:bg-[#282828]">
+            <i class="ph ph-folder text-xl sm:text-2xl"></i>
+            <span class="hidden sm:inline">Folders</span>
+          </button>
+          
+          <button onclick="switchTab('videos')" id="tab-btn-videos" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition bg-brand/10 text-brand border border-brand/20">
+            <i class="ph-bold ph-video text-xl sm:text-2xl"></i>
+            <span class="hidden sm:inline">All Videos</span>
+          </button>
+
+          <button onclick="switchTab('playlists')" id="tab-btn-playlists" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:text-white hover:bg-[#282828]">
+            <i class="ph ph-playlist text-xl sm:text-2xl"></i>
+            <span class="hidden sm:inline">Playlists</span>
+          </button>
+
+          <button onclick="switchTab('vault')" id="tab-btn-vault" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:text-white hover:bg-[#282828]">
+            <i class="ph ph-shield-check text-xl sm:text-2xl"></i>
+            <span class="hidden sm:inline">Private Vault</span>
+          </button>
+
+          <button onclick="switchTab('music')" id="tab-btn-music" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:text-white hover:bg-[#282828]">
+            <i class="ph ph-music-notes text-xl sm:text-2xl"></i>
+            <span class="hidden sm:inline">Music Player</span>
+          </button>
+
+          <button onclick="switchTab('trash')" id="tab-btn-trash" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:text-white hover:bg-[#282828]">
+            <i class="ph ph-trash text-xl sm:text-2xl"></i>
+            <span class="hidden sm:inline">Recycle Bin</span>
+          </button>
+        </div>
+
+        <!-- System Storage Indicator -->
+        <div class="hidden sm:block p-3 rounded-xl bg-[#242424] border border-darkBorder">
+          <div class="flex justify-between text-xs text-gray-400 mb-1.5 font-medium">
+            <span>Storage</span>
+            <span class="text-brand">48.2 GB free</span>
+          </div>
+          <div class="w-full bg-darkBg h-1.5 rounded-full overflow-hidden">
+            <div class="bg-brand h-full rounded-full w-[65%]"></div>
+          </div>
+          <p class="text-[10px] text-gray-500 mt-2">Hardware Acceleration: <span class="text-green-400">ACTIVE</span></p>
+        </div>
+      </nav>
+
+      <!-- Main Content Panels -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6" id="mainContainer">
+        
+        <!-- ============ TAB 1: ALL VIDEOS ============ -->
+        <section id="tab-videos" class="tab-panel">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                All Videos <span id="videoCountBadge" class="text-xs bg-[#242424] text-gray-400 px-2.5 py-1 rounded-full border border-darkBorder">4 videos</span>
+              </h2>
+              <p class="text-xs text-gray-400 mt-1">Supports MP4, MKV, AVI, FLV, M4V, MOV, 3GP, RMVB, TS, WMV</p>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <button onclick="toggleViewMode()" id="viewModeBtn" class="p-2 rounded-lg bg-darkCard border border-darkBorder text-gray-300 hover:text-brand transition" title="Toggle Grid/List">
+                <i class="ph ph-squares-four text-lg"></i>
+              </button>
+              <select onchange="handleSort(this.value)" class="bg-darkCard border border-darkBorder text-xs text-gray-300 rounded-lg px-2.5 py-2 focus:outline-none focus:border-brand">
+                <option value="name">Sort by Name</option>
+                <option value="duration">Sort by Duration</option>
+                <option value="size">Sort by Size</option>
+                <option value="date" selected>Sort by Date</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Drag and drop zone hint -->
+          <div 
+            id="dropZone" 
+            ondragover="event.preventDefault(); this.classList.add('border-brand', 'bg-brand/5')"
+            ondragleave="this.classList.remove('border-brand', 'bg-brand/5')"
+            ondrop="handleFileDrop(event)"
+            class="border-2 border-dashed border-darkBorder rounded-2xl p-6 mb-6 text-center transition-all cursor-pointer hover:border-gray-500"
+            onclick="document.getElementById('localFileInput').click()"
+          >
+            <i class="ph ph-cloud-arrow-up text-3xl text-brand mb-2 inline-block"></i>
+            <h3 class="font-bold text-sm text-gray-200">Drag & Drop any video file here, or click to browse</h3>
+            <p class="text-xs text-gray-500 mt-1">Plays instantly in hardware-accelerated XPlayer without uploading</p>
+          </div>
+
+          <!-- Video Grid / List -->
+          <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Populated via JavaScript -->
+          </div>
+        </section>
+
+        <!-- ============ TAB 2: FOLDERS ============ -->
+        <section id="tab-folders" class="tab-panel hidden">
+          <div class="mb-6">
+            <h2 class="text-xl sm:text-2xl font-bold text-white">Media Folders</h2>
+            <p class="text-xs text-gray-400 mt-1">Folders with indexed video files</p>
+          </div>
+          <div id="foldersGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <!-- Populated via JavaScript -->
+          </div>
+        </section>
+
+        <!-- ============ TAB 3: PLAYLISTS ============ -->
+        <section id="tab-playlists" class="tab-panel hidden">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white">Playlists</h2>
+              <p class="text-xs text-gray-400 mt-1">Organized queues and favorites</p>
+            </div>
+            <button onclick="createNewPlaylistPrompt()" class="bg-brand text-darkBg font-bold text-xs px-3 py-2 rounded-lg flex items-center space-x-1.5 hover:bg-brandDark transition">
+              <i class="ph-bold ph-plus"></i>
+              <span>New Playlist</span>
+            </button>
+          </div>
+          <div id="playlistsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <!-- Populated via JS -->
+          </div>
+        </section>
+
+        <!-- ============ TAB 4: PRIVATE VAULT ============ -->
+        <section id="tab-vault" class="tab-panel hidden">
+          <div id="vaultLockedScreen" class="max-w-md mx-auto my-12 p-8 rounded-2xl bg-darkCard border border-darkBorder text-center">
+            <div class="w-16 h-16 rounded-2xl bg-brand/10 border border-brand/20 text-brand flex items-center justify-center mx-auto mb-4 text-3xl">
+              <i class="ph ph-lock-key"></i>
+            </div>
+            <h2 class="text-xl font-bold text-white mb-1">Private Video Vault</h2>
+            <p class="text-xs text-gray-400 mb-6">Enter your 4-digit PIN to access private media (Default PIN: 1234)</p>
+            
+            <!-- PIN Display dots -->
+            <div class="flex justify-center space-x-3 mb-6">
+              <div id="pinDot1" class="w-4 h-4 rounded-full border-2 border-gray-600"></div>
+              <div id="pinDot2" class="w-4 h-4 rounded-full border-2 border-gray-600"></div>
+              <div id="pinDot3" class="w-4 h-4 rounded-full border-2 border-gray-600"></div>
+              <div id="pinDot4" class="w-4 h-4 rounded-full border-2 border-gray-600"></div>
+            </div>
+
+            <!-- PIN Pad -->
+            <div class="grid grid-cols-3 gap-3 max-w-[240px] mx-auto">
+              <button onclick="enterPinDigit('1')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">1</button>
+              <button onclick="enterPinDigit('2')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">2</button>
+              <button onclick="enterPinDigit('3')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">3</button>
+              <button onclick="enterPinDigit('4')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">4</button>
+              <button onclick="enterPinDigit('5')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">5</button>
+              <button onclick="enterPinDigit('6')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">6</button>
+              <button onclick="enterPinDigit('7')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">7</button>
+              <button onclick="enterPinDigit('8')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">8</button>
+              <button onclick="enterPinDigit('9')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">9</button>
+              <button onclick="clearPin()" class="h-12 rounded-xl bg-[#282828] hover:bg-red-900/40 text-red-400 font-bold text-sm transition">C</button>
+              <button onclick="enterPinDigit('0')" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-lg font-bold text-white transition">0</button>
+              <button onclick="backspacePin()" class="h-12 rounded-xl bg-[#282828] hover:bg-[#333] text-gray-400 text-lg transition flex items-center justify-center">
+                <i class="ph ph-backspace"></i>
+              </button>
+            </div>
+            <p id="pinErrorMsg" class="text-xs text-red-400 mt-4 h-4 font-semibold"></p>
+          </div>
+
+          <!-- Vault Unlocked View -->
+          <div id="vaultUnlockedScreen" class="hidden">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                  <i class="ph-bold ph-lock-key-open text-brand"></i>
+                  <span>Private Media Vault</span>
+                </h2>
+                <p class="text-xs text-gray-400 mt-1">Files stored here are hidden from the public library</p>
+              </div>
+              <button onclick="lockVault()" class="bg-[#282828] text-gray-300 hover:text-red-400 font-medium text-xs px-3 py-2 rounded-lg border border-darkBorder flex items-center space-x-1.5 transition">
+                <i class="ph ph-lock"></i>
+                <span>Lock Vault</span>
+              </button>
+            </div>
+            <div id="vaultGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <!-- Vault items -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ TAB 5: MUSIC PLAYER ============ -->
+        <section id="tab-music" class="tab-panel hidden">
+          <div class="max-w-2xl mx-auto my-8 p-6 sm:p-8 rounded-3xl bg-darkCard border border-darkBorder text-center">
+            <div class="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-3xl bg-gradient-to-tr from-brandDark via-amber-600 to-yellow-400 p-1 mb-6 shadow-2xl shadow-brand/20">
+              <div class="w-full h-full bg-[#1e1e1e] rounded-[22px] flex items-center justify-center relative overflow-hidden">
+                <i class="ph-bold ph-music-notes text-6xl text-brand animate-pulse"></i>
+                <!-- Animated sound waves -->
+                <div class="absolute bottom-4 flex items-end space-x-1 h-8">
+                  <div class="w-1.5 bg-brand h-4 animate-bounce"></div>
+                  <div class="w-1.5 bg-brand h-8 animate-bounce delay-75"></div>
+                  <div class="w-1.5 bg-brand h-3 animate-bounce delay-150"></div>
+                  <div class="w-1.5 bg-brand h-7 animate-bounce delay-100"></div>
+                  <div class="w-1.5 bg-brand h-5 animate-bounce"></div>
+                </div>
+              </div>
+            </div>
+
+            <h3 id="musicTrackTitle" class="text-xl font-bold text-white">Audio Background Mode</h3>
+            <p id="musicTrackArtist" class="text-xs text-gray-400 mt-1">Play any video or audio stream with screen off</p>
+
+            <div class="flex items-center justify-center space-x-6 my-8">
+              <button onclick="playPrevVideo()" class="text-2xl text-gray-400 hover:text-white transition"><i class="ph-bold ph-skip-back"></i></button>
+              <button onclick="toggleVideoPlay()" id="musicPlayBtn" class="w-14 h-14 rounded-full bg-brand hover:bg-brandDark text-darkBg text-2xl flex items-center justify-center transition shadow-lg shadow-brand/30">
+                <i class="ph-bold ph-play"></i>
+              </button>
+              <button onclick="playNextVideo()" class="text-2xl text-gray-400 hover:text-white transition"><i class="ph-bold ph-skip-forward"></i></button>
+            </div>
+
+            <p class="text-xs text-gray-500">Audio playback active with background foreground service simulation</p>
+          </div>
+        </section>
+
+        <!-- ============ TAB 6: RECYCLE BIN ============ -->
+        <section id="tab-trash" class="tab-panel hidden">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white">Recycle Bin</h2>
+              <p class="text-xs text-gray-400 mt-1">Deleted videos remain here for 30 days before permanent deletion</p>
+            </div>
+            <button onclick="emptyTrashPrompt()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs px-3 py-2 rounded-lg border border-red-500/20 transition flex items-center space-x-1.5">
+              <i class="ph ph-trash"></i>
+              <span>Empty Bin</span>
+            </button>
+          </div>
+          <div id="trashGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Trash items -->
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- ================= FULLSCREEN VIDEO PLAYER OVERLAY ================= -->
+    <div id="playerModal" class="fixed inset-0 bg-black z-50 hidden flex flex-col justify-between">
+      
+      <!-- Video Element Container -->
+      <div 
+        id="videoWrapper" 
+        class="relative w-full h-full flex items-center justify-center overflow-hidden bg-black"
+        onmousemove="handlePlayerMouseMove()"
+        onmouseleave="hideControls()"
+      >
+        <!-- The HTML5 Video Element -->
+        <video 
+          id="mainVideo" 
+          class="w-full h-full video-aspect-fit transition-all duration-300"
+          playsinline
+          onclick="toggleVideoPlay()"
+        >
+          <track id="videoSubtitleTrack" kind="subtitles" default>
+        </video>
+
+        <!-- Custom Subtitle Container -->
+        <div id="customSubtitleDisplay" class="absolute bottom-20 left-1/2 -translate-x-1/2 text-center pointer-events-none px-4 py-1.5 bg-black/75 rounded-lg text-white font-semibold text-lg max-w-[85%] hidden shadow-lg"></div>
+
+        <!-- ============ GESTURE DETECTION LAYER ============ -->
+        <div 
+          id="gestureLayer" 
+          class="absolute inset-0 z-10 flex"
+          onmousedown="startGesture(event)"
+          onmousemove="moveGesture(event)"
+          onmouseup="endGesture(event)"
+          ontouchstart="startTouchGesture(event)"
+          ontouchmove="moveTouchGesture(event)"
+          ontouchend="endGesture(event)"
+          ondblclick="handlePlayerDblClick(event)"
+        >
+          <div id="gestureLeftHalf" class="w-1/2 h-full"></div>
+          <div id="gestureRightHalf" class="w-1/2 h-full"></div>
+        </div>
+
+        <!-- Gesture HUD Indicators (Brightness / Volume / Seek) -->
+        <div id="gestureIndicator" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none opacity-0 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 shadow-2xl transition-opacity">
+          <i id="gestureIcon" class="ph-bold ph-sun text-4xl text-brand mb-2"></i>
+          <span id="gestureText" class="font-bold text-lg text-white">50%</span>
+          <div class="w-28 bg-gray-700 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div id="gestureProgressBar" class="bg-brand h-full rounded-full transition-all" style="width: 50%;"></div>
+          </div>
+        </div>
+
+        <!-- Screen Locked Badge -->
+        <div id="lockedIndicator" class="absolute top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none bg-red-600/80 backdrop-blur px-4 py-1.5 rounded-full text-xs font-bold text-white hidden flex items-center space-x-1.5">
+          <i class="ph-bold ph-lock-simple"></i>
+          <span>Controls Locked</span>
+        </div>
+
+        <!-- Lock Button Floating on Screen -->
+        <button 
+          id="screenLockBtn" 
+          onclick="toggleScreenLock(event)" 
+          class="absolute left-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur text-white flex items-center justify-center border border-white/20 transition active:scale-95 shadow-xl"
+          title="Lock Screen Controls"
+        >
+          <i id="screenLockIcon" class="ph-bold ph-lock-simple-open text-xl text-gray-200"></i>
+        </button>
+
+        <!-- ============ PLAYER TOP BAR ============ -->
+        <div id="playerTopBar" class="absolute top-0 inset-x-0 z-20 bg-gradient-to-b from-black/90 via-black/50 to-transparent p-4 sm:p-6 flex items-center justify-between transition-all duration-300">
+          <div class="flex items-center space-x-3">
+            <button onclick="closePlayer()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+              <i class="ph-bold ph-arrow-left text-xl"></i>
+            </button>
+            <div>
+              <h3 id="playerVideoTitle" class="font-bold text-sm sm:text-base text-white truncate max-w-xs sm:max-w-md">Video Title</h3>
+              <p id="playerVideoInfo" class="text-[11px] text-gray-400 font-medium">1080p · MP4 · Hardware Decoded</p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <!-- Aspect Ratio Switcher -->
+            <button onclick="cycleAspectRatio()" id="aspectBtn" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white border border-white/10 transition" title="Aspect Ratio">
+              Fit
+            </button>
+            <!-- Subtitle loader -->
+            <label class="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white border border-white/10 transition flex items-center space-x-1">
+              <i class="ph ph-subtitles text-sm"></i>
+              <span>CC</span>
+              <input type="file" accept=".vtt,.srt" class="hidden" onchange="loadCustomSubtitle(event)">
+            </label>
+            <!-- Night Mode Filter -->
+            <button onclick="toggleNightMode()" id="nightModeBtn" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition" title="Night Mode Filter">
+              <i class="ph ph-moon text-lg"></i>
+            </button>
+            <!-- Frame Snapshot -->
+            <button onclick="captureVideoFrame()" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition" title="Capture Screenshot">
+              <i class="ph ph-camera text-lg"></i>
+            </button>
+            <!-- Picture in picture -->
+            <button onclick="togglePiP()" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition" title="Picture-in-Picture">
+              <i class="ph ph-picture-in-picture text-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============ PLAYER BOTTOM CONTROLS ============ -->
+        <div id="playerBottomBar" class="absolute bottom-0 inset-x-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 sm:p-6 transition-all duration-300">
+          
+          <!-- Seek Timeline Slider -->
+          <div class="flex items-center space-x-3 mb-3">
+            <span id="playerCurrentTime" class="text-xs font-medium text-gray-300 min-w-[45px]">00:00</span>
+            <div class="relative flex-1 group">
+              <input 
+                type="range" 
+                id="playerSeekBar" 
+                min="0" 
+                max="100" 
+                value="0" 
+                step="0.1" 
+                oninput="handleSeekInput(this.value)"
+                class="w-full h-1.5 bg-white/30 rounded-full cursor-pointer appearance-none transition hover:h-2"
+              />
+            </div>
+            <span id="playerDuration" class="text-xs font-medium text-gray-400 min-w-[45px]">00:00</span>
+          </div>
+
+          <!-- Bottom Control Buttons -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+              <!-- Play/Pause -->
+              <button onclick="toggleVideoPlay()" id="playerPlayPauseBtn" class="w-10 h-10 rounded-full bg-brand hover:bg-brandDark text-darkBg flex items-center justify-center transition shadow-lg shadow-brand/30">
+                <i class="ph-bold ph-play text-xl"></i>
+              </button>
+              
+              <!-- Skip 10s Backward -->
+              <button onclick="skipSeconds(-10)" class="text-gray-300 hover:text-white transition" title="Rewind 10s">
+                <i class="ph-bold ph-arrow-counter-clockwise text-xl"></i>
+              </button>
+
+              <!-- Skip 10s Forward -->
+              <button onclick="skipSeconds(10)" class="text-gray-300 hover:text-white transition" title="Forward 10s">
+                <i class="ph-bold ph-arrow-clockwise text-xl"></i>
+              </button>
+
+              <!-- Prev Video -->
+              <button onclick="playPrevVideo()" class="text-gray-300 hover:text-white transition" title="Previous Video">
+                <i class="ph-bold ph-skip-back text-lg"></i>
+              </button>
+
+              <!-- Next Video -->
+              <button onclick="playNextVideo()" class="text-gray-300 hover:text-white transition" title="Next Video">
+                <i class="ph-bold ph-skip-forward text-lg"></i>
+              </button>
+
+              <!-- Volume Control Slider in Bar -->
+              <div class="hidden sm:flex items-center space-x-2 ml-2">
+                <button onclick="toggleMute()" id="muteBtn" class="text-gray-300 hover:text-white transition">
+                  <i class="ph-bold ph-speaker-high text-lg"></i>
+                </button>
+                <input 
+                  type="range" 
+                  id="volumeSlider" 
+                  min="0" 
+                  max="1" 
+                  step="0.05" 
+                  value="1" 
+                  oninput="setPlayerVolume(this.value)"
+                  class="w-20 h-1 bg-white/30 rounded-full cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <!-- Right Controls: Speed, Equalizer, Fullscreen -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <!-- Playback Speed Menu -->
+              <div class="relative">
+                <button onclick="toggleSpeedMenu()" id="speedBtn" class="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-bold text-brand transition">
+                  1.0x
+                </button>
+                <div id="speedMenu" class="absolute bottom-10 right-0 bg-[#242424] border border-darkBorder rounded-xl p-1.5 hidden shadow-2xl flex flex-col space-y-1 w-24 z-30">
+                  <button onclick="setPlaybackSpeed(0.5)" class="px-2 py-1 text-xs text-left rounded hover:bg-brand hover:text-darkBg font-medium text-gray-300 transition">0.5x</button>
+                  <button onclick="setPlaybackSpeed(0.75)" class="px-2 py-1 text-xs text-left rounded hover:bg-brand hover:text-darkBg font-medium text-gray-300 transition">0.75x</button>
+                  <button onclick="setPlaybackSpeed(1.0)" class="px-2 py-1 text-xs text-left rounded hover:bg-brand hover:text-darkBg font-medium text-gray-300 transition">1.0x (Normal)</button>
+                  <button onclick="setPlaybackSpeed(1.25)" class="px-2 py-1 text-xs text-left rounded hover:bg-brand hover:text-darkBg font-medium text-gray-300 transition">1.25x</button>
+                  <button onclick="setPlaybackSpeed(1.5)" class="px-2 py-1 text-xs text-left rounded hover:bg-brand hover:text-darkBg font-medium text-gray-300 transition">1.5x</button>
+                  <button onclick="setPlaybackSpeed(2.0)" class="px-2 py-1 text-xs text-left rounded hover:bg-brand hover:text-darkBg font-medium text-gray-300 transition">2.0x</button>
+                </div>
+              </div>
+
+              <!-- Sleep Timer Button -->
+              <button onclick="toggleSleepTimerPrompt()" title="Sleep Timer" class="text-gray-300 hover:text-brand transition">
+                <i class="ph ph-timer text-xl"></i>
+              </button>
+
+              <!-- Audio Equalizer in Player -->
+              <button onclick="openEqualizerModal()" title="Equalizer" class="text-gray-300 hover:text-brand transition">
+                <i class="ph ph-sliders text-xl"></i>
+              </button>
+
+              <!-- Fullscreen Toggle -->
+              <button onclick="toggleFullscreen()" class="text-gray-300 hover:text-white transition" title="Toggle Fullscreen">
+                <i class="ph-bold ph-corners-out text-xl"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= EQUALIZER MODAL ================= -->
+    <div id="equalizerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-darkCard border border-darkBorder w-full max-w-md rounded-3xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-2.5">
+            <i class="ph-bold ph-sliders text-2xl text-brand"></i>
+            <h3 class="font-bold text-lg text-white">Audio Equalizer & Boost</h3>
+          </div>
+          <button onclick="closeEqualizerModal()" class="text-gray-400 hover:text-white transition text-xl">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <!-- Presets -->
+        <div class="flex items-center justify-between mb-6">
+          <span class="text-xs text-gray-400 font-medium">Preset:</span>
+          <select id="eqPresetSelect" onchange="applyEqPreset(this.value)" class="bg-[#282828] border border-darkBorder text-xs text-brand font-semibold rounded-lg px-3 py-1.5 focus:outline-none">
+            <option value="flat">Flat (Default)</option>
+            <option value="bass">Bass Boost</option>
+            <option value="rock">Rock</option>
+            <option value="vocal">Vocal Clarify</option>
+            <option value="movie">Movie Cinema</option>
+          </select>
+        </div>
+
+        <!-- 5-Band Slider Controls -->
+        <div class="grid grid-cols-5 gap-3 h-48 py-2">
+          <div class="flex flex-col items-center justify-between">
+            <span class="text-[10px] text-gray-400">+12dB</span>
+            <input type="range" min="-12" max="12" value="0" orient="vertical" class="h-32 -rotate-90 my-auto cursor-pointer" oninput="updateEqBand(0, this.value)">
+            <span class="text-[11px] font-bold text-gray-300">60Hz</span>
+          </div>
+          <div class="flex flex-col items-center justify-between">
+            <span class="text-[10px] text-gray-400">+12dB</span>
+            <input type="range" min="-12" max="12" value="0" orient="vertical" class="h-32 -rotate-90 my-auto cursor-pointer" oninput="updateEqBand(1, this.value)">
+            <span class="text-[11px] font-bold text-gray-300">230Hz</span>
+          </div>
+          <div class="flex flex-col items-center justify-between">
+            <span class="text-[10px] text-gray-400">+12dB</span>
+            <input type="range" min="-12" max="12" value="0" orient="vertical" class="h-32 -rotate-90 my-auto cursor-pointer" oninput="updateEqBand(2, this.value)">
+            <span class="text-[11px] font-bold text-gray-300">910Hz</span>
+          </div>
+          <div class="flex flex-col items-center justify-between">
+            <span class="text-[10px] text-gray-400">+12dB</span>
+            <input type="range" min="-12" max="12" value="0" orient="vertical" class="h-32 -rotate-90 my-auto cursor-pointer" oninput="updateEqBand(3, this.value)">
+            <span class="text-[11px] font-bold text-gray-300">3.6kHz</span>
+          </div>
+          <div class="flex flex-col items-center justify-between">
+            <span class="text-[10px] text-gray-400">+12dB</span>
+            <input type="range" min="-12" max="12" value="0" orient="vertical" class="h-32 -rotate-90 my-auto cursor-pointer" oninput="updateEqBand(4, this.value)">
+            <span class="text-[11px] font-bold text-gray-300">14kHz</span>
+          </div>
+        </div>
+
+        <!-- Bass Boost Toggle -->
+        <div class="mt-6 pt-4 border-t border-darkBorder flex items-center justify-between">
+          <div>
+            <h4 class="text-sm font-semibold text-white">Bass Boost 200%</h4>
+            <p class="text-[11px] text-gray-400">Deep resonance for headphones & speakers</p>
+          </div>
+          <input type="checkbox" id="bassBoostToggle" onchange="toggleBassBoost(this.checked)" class="w-5 h-5 accent-brand cursor-pointer">
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 bg-[#282828] text-white border border-darkBorder px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2.5 opacity-0 pointer-events-none transition-all duration-300">
+      <i id="toastIcon" class="ph-bold ph-info text-brand text-lg"></i>
+      <span id="toastMsg" class="text-xs font-semibold">Action completed</span>
+    </div>
+
+  </div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
