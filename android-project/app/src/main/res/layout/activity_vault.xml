@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:orientation="vertical">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btnBackVault"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Private Video Vault"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Locked State PIN Input -->
+    <LinearLayout
+        android:id="@+id/layoutPinLock"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@android:drawable/ic_lock_lock"
+            app:tint="@color/brand_orange" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Enter 4-Digit Security PIN"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Default PIN: 1234"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/txtPinDots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:letterSpacing="0.4"
+            android:text="○  ○  ○  ○"
+            android:textColor="@color/brand_orange"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txtPinError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/accent_red"
+            android:textSize="12sp" />
+
+        <!-- 3x4 Pin Pad -->
+        <GridLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:columnCount="3"
+            android:rowCount="4">
+
+            <Button android:id="@+id/btnPin1" text="1" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+            <Button android:id="@+id/btnPin2" text="2" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+            <Button android:id="@+id/btnPin3" text="3" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+
+            <Button android:id="@+id/btnPin4" text="4" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+            <Button android:id="@+id/btnPin5" text="5" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+            <Button android:id="@+id/btnPin6" text="6" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+
+            <Button android:id="@+id/btnPin7" text="7" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+            <Button android:id="@+id/btnPin8" text="8" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+            <Button android:id="@+id/btnPin9" text="9" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+
+            <Button android:id="@+id/btnPinC" text="C" style="@style/Widget.MaterialComponents.Button.TextButton" android:layout_margin="6dp" android:textColor="@color/accent_red"/>
+            <Button android:id="@+id/btnPin0" text="0" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_margin="6dp" android:textColor="@color/text_primary"/>
+            <Button android:id="@+id/btnPinBack" text="⌫" style="@style/Widget.MaterialComponents.Button.TextButton" android:layout_margin="6dp" android:textColor="@color/text_secondary"/>
+        </GridLayout>
+
+    </LinearLayout>
+
+    <!-- Unlocked State List -->
+    <LinearLayout
+        android:id="@+id/layoutVaultContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerVault"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp" />
+    </LinearLayout>
+
+</LinearLayout>

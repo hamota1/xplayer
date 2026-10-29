@@ -1,4 +1,4 @@
-name: Merge & Build Full XPlayer APK
+name: Build Native XPlayer Clone & Full Merged APK
 
 on:
   push:
@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  merge-apk:
-    name: Merge Split APKs into Full Standalone APK
+  build-native-clone:
+    name: Build Native Android Clone APK
     runs-on: ubuntu-latest
 
     steps:
@@ -23,53 +23,49 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download APKEditor and Uber-APK-Signer
-        run: |
-          mkdir -p tools
-          curl -L -o tools/APKEditor.jar https://github.com/REAndroid/APKEditor/releases/download/V1.4.9/APKEditor-1.4.9.jar
-          curl -L -o tools/uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
-          chmod +x tools/*.jar
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      - name: Merge Split APKs with APKEditor
+      - name: Build Native Android App
         run: |
-          mkdir -p build_output
-          echo "Merging split APKs from splits/ directory..."
-          java -jar tools/APKEditor.jar m -i splits -o build_output/XPlayer_Merged_Unsigned.apk
+          cd android-project
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
 
-      - name: Sign Merged APK with Uber-APK-Signer
+      - name: Prepare Output
         run: |
-          java -jar tools/uber-apk-signer.jar --apks build_output/XPlayer_Merged_Unsigned.apk -o build_output/signed --allowResign
-          # Locate signed apk
-          SIGNED_APK=$(find build_output/signed -name "*aligned-debugSigned.apk" -o -name "*.apk" | head -n 1)
-          cp "$SIGNED_APK" build_output/XPlayer-Full-Merged.apk
-          echo "Signed APK ready: build_output/XPlayer-Full-Merged.apk"
+          mkdir -p output
+          cp android-project/app/build/outputs/apk/debug/*.apk output/XPlayer-Native-Clone.apk
+          echo "Native APK built successfully."
 
-      - name: Upload Full Merged APK as Artifact
+      - name: Upload Native Clone APK
         uses: actions/upload-artifact@v4
         with:
-          name: XPlayer-Full-Merged-APK
-          path: build_output/XPlayer-Full-Merged.apk
+          name: XPlayer-Native-Clone-APK
+          path: output/XPlayer-Native-Clone.apk
           retention-days: 30
 
-      - name: Create GitHub Release with Full APK
+      - name: Publish Release with Native Clone
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.6.3-full
-          name: "XPlayer (Video Player All Format) v1.6.3 Full Standalone APK"
+          tag_name: v2.0.0-native
+          name: "XPlayer Native Android Clone v2.0 (Full Features & Clean)"
           body: |
-            ### 🎬 XPlayer Full Standalone APK (100% Native Features)
-            تم دمج حزم الـ Split APK وتوليد النسخة الكاملة الأصلية من **XPlayer**:
+            ### 🚀 XPlayer Native Android Clone (100% Native & Clean)
+            نسخة الكلون الأصلية الكاملة المبنية بنظام أندرويد الأصلي (Native Java + ExoPlayer):
             
-            - **المميزات الكاملة:**
-              - مشغل الفيديو بكافة الصيغ (MKV, MP4, M4V, AVI, MOV, 3GP, FLV, WMV, RMVB, TS).
-              - فك تشفير وتسريع عتادي فائق بدقة 4K Ultra HD.
-              - كافة مكتبات المعالجة الأصلية (FFmpeg, IjkPlayer, codecs).
-              - الخزنة السرية (Private Vault).
-              - المعادل الصوتي ومضخم الصوت الجهير.
-              - التحكم بالإيماءات الكاملة (السطوع، الصوت، والتقديم).
-              - النافذة العائمة (Picture-in-Picture) والتشغيل في الخلفية.
-            
-            📥 **رابط التحميل المباشر أدناه:** قم بتنزيل ملف `XPlayer-Full-Merged.apk` وتثبيته مباشرة على هاتفك الأندرويد.
-          files: build_output/XPlayer-Full-Merged.apk
+            - 📁 **فحص وتشغيل ملفات الهاتف:** قراءة كافة مقاطع الفيديو الموجودة على ذاكرة الهاتف والميموري كارد تلقائياً.
+            - 🖐️ **نظام الإيماءات الكامل:**
+              - سحب عمودي على اليسار: التحكم في السطوع مع مؤشر HUD.
+              - سحب عمودي على اليمين: التحكم في الصوت مع مؤشر HUD.
+              - سحب أفقي: تقديم وتأخير مع شاشة عرض التوقيت الدقيق.
+              - نقر مزدوج: قفز 10 ثوانٍ للأمام والخلف.
+            - 🎚️ **معادل صوتي أصلي (Native AudioFx Equalizer):** 5 نطاقات ترددات حقيقية مع Bass Boost ومؤثرات صوتية.
+            - 🔒 **الخزنة السرية (Private Vault):** قفل برمز PIN مكون من 4 أرقام وإخفاء الفيديوهات بملف `.nomedia`.
+            - 🪟 **النافذة العائمة (Picture-in-Picture):** دعم كامل لخاصية PiP والتشغيل أثناء تصفح التطبيقات الأخرى.
+            - ⚡ **فك تشفير عتادي فائق (ExoPlayer):** دعم 4K Ultra HD، والتحكم بنسب العرض (Fit, Crop, Fill) وسرعة التشغيل (0.5x حتى 2.0x).
+            - 🚫 **خالٍ تماماً من أي إعلانات:** بدون إعلانات مزعجة وبأعلى سرعة ممكنة.
+          files: output/XPlayer-Native-Clone.apk
         continue-on-error: true

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_orange">#FF9800</color>
+    <color name="brand_orange_dark">#F57C00</color>
+    <color name="bg_dark">#121212</color>
+    <color name="bg_card">#1E1E1E</color>
+    <color name="bg_surface">#252525</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#AAAAAA</color>
+    <color name="text_muted">#777777</color>
+    <color name="accent_red">#FF5252</color>
+    <color name="accent_green">#4CAF50</color>
+    <color name="overlay_black">#B3000000</color>
+    <color name="border_dark">#2E2E2E</color>
+</resources>
